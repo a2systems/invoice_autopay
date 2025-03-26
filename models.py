@@ -17,14 +17,19 @@ class AccountMove(models.Model):
                     if not journal_id:
                         raise ValidationError('No hay medio de pago para autopago definido')
                 if rec.amount_residual:
+                    if rec.currency_id.id == rec.company_id.currency_id.id:
+                        amount = rec.amount_residual
+                    else:
+                        amount = rec.currency_id._convert(rec.amount_residual,rec.company_id.currency_id,rec.company_id,date.today())
                     vals_payment = {
                         'partner_id': rec.partner_id.id,
                         'journal_id': journal_id.id,
                         'date': str(date.today()),
                         'payment_type': 'inbound',
                         'partner_type': 'customer',
-                        'amount': rec.amount_residual,
+                        'amount': amount,
                         'ref': rec.display_name,
+                        'company_id': rec.company_id.id,
                         }
                     payment_id = self.env['account.payment'].create(vals_payment)
                     payment_id.action_post()
